@@ -1,0 +1,9 @@
+# These run on a Linux server. A CRLF in a shell script is a syntax error
+# waiting to happen, and the beacon and the deploy script both go over ssh.
+*.sh   text eol=lf
+*.py   text eol=lf
+*.js   text eol=lf
+*.html text eol=lf
+*.md   text eol=lf
+*.gif  binary
+*.png  binary
