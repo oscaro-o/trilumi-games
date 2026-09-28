@@ -1,0 +1,8 @@
+# scratch
+.verify/
+.deploy-check.tmp
+*.tmp
+
+# python
+__pycache__/
+*.pyc

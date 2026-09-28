@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Trilumi — Games about judgement</title>
+<meta name="description" content="Four short games from Trilumi. None of them test what you know — each one puts you somewhere the answer is not in the room, and you have to decide anyway.">
+<link rel="canonical" href="https://trilumi.xyz/games/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23004AAD'/%3E%3Cg fill='%23fff' transform='translate(12 9) scale(0.4)'%3E%3Cpolygon points='57,0 68.5,21 40,76 18,76'/%3E%3Cpolygon points='9,80 63,80 73,98 0,98'/%3E%3Cpolygon points='66,33 55,55 79,106 100,106'/%3E%3C/g%3E%3C/svg%3E">
+<meta name="theme-color" content="#f7f4ef">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Trilumi">
+<meta property="og:url" content="https://trilumi.xyz/games/">
+<meta property="og:title" content="Trilumi — Games about judgement">
+<meta property="og:description" content="Four short games. None of them test what you know. Each one puts you somewhere the answer is not in the room.">
+<meta property="og:image" content="https://trilumi.xyz/games/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+:root{
+  --paper:#f7f4ef; --paper2:#fbf9f4; --ink:#191713; --ink2:#4c463d;
+  --ink3:#8c8478; --line:#e2dbcf; --blue:#004AAD; --blue-soft:#e8eef8;
+  --serif:Georgia,"Times New Roman","Songti SC","Noto Serif CJK SC",serif;
+  --sans:"Segoe UI",Helvetica,Arial,"Microsoft YaHei","PingFang SC",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--paper);color:var(--ink)}
+body{font-family:var(--serif);font-size:17px;line-height:1.7;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:760px;margin:0 auto;padding:0 24px 72px}
+
+/* ---- header ---- */
+.top{display:flex;align-items:center;gap:10px;
+  padding:22px 0 18px;border-bottom:1px solid var(--line);margin-bottom:44px}
+.top .lock{display:inline-flex;align-items:center;gap:11px;text-decoration:none;
+  color:var(--blue);margin-right:auto}
+.top .lock svg{display:block;flex:none}
+.top .wm{font-family:var(--sans);font-size:12.5px;font-weight:700;
+  letter-spacing:.22em;padding-left:.11em}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.seg button{appearance:none;border:0;background:transparent;font-family:var(--sans);
+  font-size:12.5px;color:var(--ink3);padding:7px 11px;cursor:pointer;
+  border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--blue);color:#fff}
+
+/* ---- intro ---- */
+.kick{font-family:var(--sans);font-size:11.5px;font-weight:700;letter-spacing:.24em;
+  text-transform:uppercase;color:var(--blue);margin:0 0 20px}
+h1{font-size:clamp(34px,6.2vw,50px);line-height:1.14;margin:0 0 26px;
+  letter-spacing:-.015em;font-weight:700}
+.lede{font-size:clamp(17px,2.4vw,19.5px);color:var(--ink2);margin:0 0 18px;
+  line-height:1.72}
+.lede em{font-style:italic;color:var(--ink)}
+
+/* ---- cards ---- */
+.list{list-style:none;margin:52px 0 0;padding:0;
+  border-top:1px solid var(--line)}
+.list li{border-bottom:1px solid var(--line)}
+.card{display:block;text-decoration:none;color:inherit;padding:26px 0 28px;
+  transition:padding-left .18s ease,background .18s ease}
+.card:hover,.card:focus-visible{padding-left:16px;background:var(--paper2)}
+.card:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}
+.num{font-family:var(--sans);font-size:11.5px;font-weight:700;letter-spacing:.16em;
+  color:var(--ink3);display:block;margin-bottom:9px}
+.card h2{font-size:clamp(21px,3.2vw,26px);margin:0 0 9px;line-height:1.28;
+  font-weight:700;letter-spacing:-.01em}
+.card:hover h2{color:var(--blue)}
+.card p{margin:0;color:var(--ink2);font-size:16px;line-height:1.66}
+.meta{display:flex;flex-wrap:wrap;gap:7px;margin-top:15px}
+.tag{font-family:var(--sans);font-size:11px;letter-spacing:.05em;color:var(--ink3);
+  border:1px solid var(--line);border-radius:999px;padding:3.5px 10px;
+  background:var(--paper2)}
+.go{font-family:var(--sans);font-size:12.5px;font-weight:700;letter-spacing:.06em;
+  color:var(--blue);margin-top:14px;display:inline-block}
+.card:hover .go::after{content:" →"}
+
+/* ---- closing ---- */
+.why{margin:56px 0 0;padding:30px 32px;background:var(--blue-soft);
+  border-left:3px solid var(--blue);border-radius:0 6px 6px 0}
+.why p{margin:0;font-size:16.5px;line-height:1.76;color:var(--ink)}
+.why .sig{font-family:var(--sans);font-size:12px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--blue);font-weight:700;margin-bottom:13px}
+.why a{color:var(--blue)}
+
+/* ---- footer ---- */
+.foot{margin-top:52px;padding-top:20px;border-top:1px solid var(--line);
+  font-family:var(--sans);font-size:12.5px;color:var(--ink3);
+  display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center}
+.foot a{color:var(--ink3);text-decoration:none;border-bottom:1px solid var(--line)}
+.foot a:hover{color:var(--blue);border-color:var(--blue)}
+@media (max-width:480px){
+  .wrap{padding:0 18px 56px}
+  .top{flex-wrap:wrap;gap:12px}
+  .why{padding:24px 22px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <a class="lock" href="https://trilumi.xyz/" aria-label="Trilumi — home">
+      <svg width="17" height="18" viewBox="0 0 100 106" fill="currentColor" aria-hidden="true">
+        <polygon points="57,0 68.5,21 40,76 18,76"></polygon>
+        <polygon points="9,80 63,80 73,98 0,98"></polygon>
+        <polygon points="66,33 55,55 79,106 100,106"></polygon>
+      </svg>
+      <span class="wm">TRILUMI</span>
+    </a>
+    <div class="seg" id="seg">
+      <button data-lang="en" aria-pressed="true">EN</button>
+      <button data-lang="hant" aria-pressed="false">繁</button>
+      <button data-lang="hans" aria-pressed="false">简</button>
+    </div>
+  </header>
+
+  <p class="kick" id="kick"></p>
+  <h1 id="h1"></h1>
+  <p class="lede" id="lede"></p>
+
+  <ul class="list" id="list"></ul>
+
+  <div class="why">
+    <div class="sig" id="whySig"></div>
+    <p id="whyBody"></p>
+  </div>
+
+  <div class="foot">
+    <span id="footNote"></span>
+    <a href="https://trilumi.xyz/">trilumi.xyz</a>
+    <a href="https://trilumi.xyz/solutions/" id="footSol"></a>
+  </div>
+
+</div>
+
+<script>
+"use strict";
+
+/* ==========================================================================
+   The four games. Only the text differs between languages — the addresses and
+   the numbers are shared, so a translation can never break a link.
+   ========================================================================== */
+var GAMES = [
+  { url: "https://aihammer.trilumi.xyz/",   min: 10, langs: 3 },
+  { url: "https://hetu.trilumi.xyz/",       min: 20, langs: 3 },
+  { url: "https://artofwar.trilumi.xyz/",   min: 20, langs: 4 },
+  { url: "https://whereami.trilumi.xyz/",   min: 15, langs: 3 }
+];
+
+var T = {
+  en: {
+    doc: "Trilumi — Games about judgement",
+    kick: "Trilumi · Four games",
+    h1: "Games about judgement",
+    lede: "None of these test what you know. Each one puts you somewhere the answer is not in the room, and you have to decide anyway.",
+    min: "min",
+    langWord: "languages",
+    go: "Play",
+    whySig: "Why we make these",
+    why: "Trilumi builds the infrastructure of programmable money. Most of that work turns out to be judgement rather than construction — anyone can build, and almost nobody can say what is worth building. These games are where we practise that in public.",
+    footNote: "Free, no sign-up, no tracking beyond our own server log.",
+    footSol: "What we build",
+    items: [
+      { t: "Everyone Got Thor's Hammer",
+        d: "One morning, everyone on earth woke up holding Thor's hammer. A week's work finishes before lunch. You play a carver with twenty years in his hands, deciding what he still has to sell once making things is free." },
+      { t: "Invent the Lo Shu",
+        d: "Three acts. First you build a language of marks, then the arithmetic of ten, then you reach the moment your language runs out and something older takes over." },
+      { t: "Invent the Art of War",
+        d: "Thirteen battles, one decision each. After every one you write the lesson in your own words — and only then does the game show you what was written down two thousand years ago." },
+      { t: "Which Cell Are You In?",
+        d: "Six rounds for younger thinkers. Find the rulers that tell things apart, find where you currently sit, then sort the rulers into the ones you can move and the ones you can only accept." }
+    ]
+  },
+  hant: {
+    doc: "Trilumi — 關於判斷的遊戲",
+    kick: "Trilumi · 四款遊戲",
+    h1: "關於判斷的遊戲",
+    lede: "這幾款遊戲都不考你記得什麼。它們把你放到一個「答案不在房間裡」的位置，然後你還是得下決定。",
+    min: "分鐘",
+    langWord: "種語言",
+    go: "開始玩",
+    whySig: "為什麼做這些",
+    why: "Trilumi 建立可編程貨幣的基礎設施。這份工作大部分不是建造，而是判斷 —— 人人都能造，但幾乎沒有人說得清什麼值得造。這幾款遊戲，就是我們公開練習判斷的地方。",
+    footNote: "免費、免註冊，除了我們自己伺服器的日誌以外沒有追蹤。",
+    footSol: "我們建什麼",
+    items: [
+      { t: "人人手上都有雷神之錘",
+        d: "某天早上醒來，地球上每個人手上都握著雷神之錘。一週的活，午飯前就做完。你是一位手上有二十年功夫的雕刻師，要決定當「做得出來」不再值錢之後，你還剩下什麼可以賣。" },
+      { t: "「發明」河圖洛書",
+        d: "三場。先造一套記號的語言，再湊出十的算術，然後走到你的語言不夠用的那一刻 —— 更古老的東西接管了。" },
+      { t: "「發明」孫子兵法",
+        d: "十三場仗，一場一個決定。每打完一場，你先用自己的話寫下這仗的教訓 —— 然後遊戲才把兩千年前寫下的原文給你看。" },
+      { t: "你在哪一格？",
+        d: "給年紀小一點的思考者的六個圖幅。找出把東西區分開的尺子，找出你現在站在哪一格，再把尺子分成「推得動」和「只能接受」兩堆。" }
+    ]
+  },
+  hans: {
+    doc: "Trilumi — 关于判断的游戏",
+    kick: "Trilumi · 四款游戏",
+    h1: "关于判断的游戏",
+    lede: "这几款游戏都不考你记得什么。它们把你放到一个「答案不在房间里」的位置，然后你还是得做决定。",
+    min: "分钟",
+    langWord: "种语言",
+    go: "开始玩",
+    whySig: "为什么做这些",
+    why: "Trilumi 建立可编程货币的基础设施。这份工作大部分不是建造，而是判断 —— 人人都能造，但几乎没有人说得清什么值得造。这几款游戏，就是我们公开练习判断的地方。",
+    footNote: "免费、免注册，除了我们自己服务器的日志以外没有追踪。",
+    footSol: "我们建什么",
+    items: [
+      { t: "人人手上都有雷神之锤",
+        d: "某天早上醒来，地球上每个人手上都握着雷神之锤。一周的活，午饭前就做完。你是一位手上有二十年功夫的雕刻师，要决定当「做得出来」不再值钱之后，你还剩下什么可以卖。" },
+      { t: "「发明」河图洛书",
+        d: "三场。先造一套记号的语言，再凑出十的算术，然后走到你的语言不够用的那一刻 —— 更古老的东西接管了。" },
+      { t: "「发明」孙子兵法",
+        d: "十三场仗，一场一个决定。每打完一场，你先用自己的话写下这仗的教训 —— 然后游戏才把两千年前写下的原文给你看。" },
+      { t: "你在哪一格？",
+        d: "给年纪小一点的思考者的六个图幅。找出把东西区分开的尺子，找出你现在站在哪一格，再把尺子分成「推得动」和「只能接受」两堆。" }
+    ]
+  }
+};
+
+var LANGS = ["en", "hant", "hans"];
+var LANG = "en";
+try {
+  var saved = localStorage.getItem("trilumi_games_lang");
+  if (saved && LANGS.indexOf(saved) >= 0) LANG = saved;
+} catch (e) {}
+
+function el(id) { return document.getElementById(id); }
+
+function esc(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function render() {
+  var t = T[LANG];
+  document.documentElement.lang = LANG === "en" ? "en" : (LANG === "hant" ? "zh-Hant" : "zh-Hans");
+  document.title = t.doc;
+
+  el("kick").textContent = t.kick;
+  el("h1").textContent = t.h1;
+  el("lede").textContent = t.lede;
+  el("whySig").textContent = t.whySig;
+  el("whyBody").textContent = t.why;
+  el("footNote").textContent = t.footNote;
+  el("footSol").textContent = t.footSol;
+
+  el("list").innerHTML = GAMES.map(function (g, i) {
+    var it = t.items[i];
+    return '<li><a class="card" href="' + g.url + '">' +
+      '<span class="num">' + ("0" + (i + 1)) + '</span>' +
+      '<h2>' + esc(it.t) + '</h2>' +
+      '<p>' + esc(it.d) + '</p>' +
+      '<div class="meta">' +
+        '<span class="tag">' + g.min + " " + esc(t.min) + '</span>' +
+        '<span class="tag">' + g.langs + " " + esc(t.langWord) + '</span>' +
+      '</div>' +
+      '<span class="go">' + esc(t.go) + '</span>' +
+    '</a></li>';
+  }).join("");
+
+  Array.prototype.forEach.call(el("seg").querySelectorAll("button"), function (b) {
+    b.setAttribute("aria-pressed", String(b.getAttribute("data-lang") === LANG));
+  });
+}
+
+el("seg").addEventListener("click", function (e) {
+  var b = e.target.closest("button");
+  if (!b) return;
+  var code = b.getAttribute("data-lang");
+  if (LANGS.indexOf(code) < 0 || code === LANG) return;
+  LANG = code;
+  try { localStorage.setItem("trilumi_games_lang", code); } catch (e2) {}
+  render();
+  track("lang", { to: code });
+});
+
+render();
+
+/* ==========================================================================
+   Beacon — same first-party pattern as the games, so one report script can
+   read the whole family. No cookie, no external script, no personal data.
+   ========================================================================== */
+function track(ev, extra) {
+  if (!/(^|\.)trilumi\.xyz$/.test(location.hostname)) return;
+  var sid;
+  try {
+    sid = sessionStorage.getItem("tri_sid");
+    if (!sid) {
+      sid = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      sessionStorage.setItem("tri_sid", sid);
+    }
+  } catch (e) { sid = "n" + Math.random().toString(36).slice(2, 8); }
+  var q = "?e=" + encodeURIComponent(ev) + "&s=" + sid + "&g=games-hub&l=" + LANG;
+  if (extra) { for (var k in extra) q += "&" + k + "=" + encodeURIComponent(extra[k]); }
+  try { new Image().src = "/_e/p.gif" + q + "&_=" + Date.now(); } catch (e) {}
+}
+
+(function () {
+  var r = "direct";
+  try { if (document.referrer) r = new URL(document.referrer).hostname || "direct"; } catch (e) {}
+  track("load", { r: r });
+})();
+
+el("list").addEventListener("click", function (e) {
+  var a = e.target.closest("a.card");
+  if (!a) return;
+  var i = Array.prototype.indexOf.call(el("list").querySelectorAll("a.card"), a);
+  track("click", { g: (GAMES[i] ? GAMES[i].url : "").replace(/^https?:\/\//, "").replace(/\/$/, "") });
+});
+</script>
+</body>
+</html>
