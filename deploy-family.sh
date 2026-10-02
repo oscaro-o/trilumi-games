@@ -93,10 +93,33 @@ verify() {
 FAILED=0
 note_fail() { FAILED=1; }
 
+# assert that the service worker answering on the wire is the one in the repo.
+# Without this a VERSION bump can sit in git forever and no returning visitor
+# ever receives it — the failure looks exactly like "I don't see the changes".
+verify_sw() {
+  local label="$1" domain="$2" srcdir="$3" want got
+  want=$(sed -n 's/.*const VERSION *= *"\([^"]*\)".*/\1/p' "$ROOT/$srcdir/sw.js" 2>/dev/null | head -1)
+  if [ -z "$want" ]; then return 0; fi
+  got=$(curl -sS -L --max-time 25 "https://$domain/sw.js" 2>/dev/null |
+        sed -n 's/.*const VERSION *= *"\([^"]*\)".*/\1/p' | head -1)
+  if [ "$got" = "$want" ]; then
+    printf '  ok    %-42s %s\n' "$label (sw)" "$got"
+  else
+    printf '  FAIL  %-42s %s (repo has %s)\n' "$label (sw)" "${got:-none}" "$want"
+    return 1
+  fi
+}
+
 deploy_game() {
   local slug="$1" domain="$2" srcdir="$3"
   title "$slug  ·  $domain"
-  push "$slug" "/home/$domain/public_html" "$srcdir" index.html
+  # sw.js has to travel with index.html. It did not, so the service worker on
+  # the server stayed at whatever was pushed by hand the first time and every
+  # VERSION bump in the repo was a no-op in production — which is a very quiet
+  # way to ship a change that nobody can see.
+  local files=(index.html)
+  if [ -f "$ROOT/$srcdir/sw.js" ]; then files+=(sw.js); fi
+  push "$slug" "/home/$domain/public_html" "$srcdir" "${files[@]}"
   push "beacon" "/home/$domain/public_html/_e" brand/beacon p.gif
 }
 
@@ -134,6 +157,7 @@ fi
 if want artofwar; then
   verify "artofwar"          "https://artofwar.trilumi.xyz/"         || note_fail
   verify "beacon @ artofwar" "https://artofwar.trilumi.xyz/_e/p.gif" || note_fail
+  verify_sw "artofwar" artofwar.trilumi.xyz _gh/sunzi-13             || note_fail
 fi
 
 if want whereami; then
@@ -144,6 +168,7 @@ fi
 if want hetu; then
   verify "hetu-luoshu"       "https://hetu.trilumi.xyz/"         || note_fail
   verify "beacon @ hetu"     "https://hetu.trilumi.xyz/_e/p.gif" || note_fail
+  verify_sw "hetu-luoshu" hetu.trilumi.xyz _gh/hetu-luoshu       || note_fail
 fi
 
 if want rebuild; then
