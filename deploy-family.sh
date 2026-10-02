@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 #
-# Deploy the game family: the four patched games, and the beacon each one
-# reports to.
+# Deploy the game family: the games, and the beacon each one reports to.
 #
 #   bash brand/deploy-family.sh              deploy every game
 #   bash brand/deploy-family.sh --check      show what would move, touch nothing
@@ -107,6 +106,12 @@ if want aihammer; then deploy_game aihammer aihammer.trilumi.xyz thor-hammer; fi
 if want artofwar; then deploy_game artofwar artofwar.trilumi.xyz _gh/sunzi-13; fi
 if want whereami; then deploy_game whereami whereami.trilumi.xyz _gh/coordinate-thinking-game; fi
 
+# 再建美国 / 再造政府 — one repo, two games, two subdomains. They used to
+# answer on trilumi.xyz/rebuild/ as well, from games-www/ outside public_html;
+# those subpaths are retired, so the pair is now two ordinary rows.
+if want rebuild;  then deploy_game rebuild  rebuild.trilumi.xyz  _gh/rebuild-america/1861; fi
+if want rebuild2; then deploy_game rebuild2 rebuild2.trilumi.xyz _gh/rebuild-america/1933; fi
+
 # hetu-luoshu already carries the beacon from its first release
 if want hetu; then
   title "hetu-luoshu  ·  hetu.trilumi.xyz"
@@ -140,6 +145,28 @@ if want hetu; then
   verify "hetu-luoshu"       "https://hetu.trilumi.xyz/"         || note_fail
   verify "beacon @ hetu"     "https://hetu.trilumi.xyz/_e/p.gif" || note_fail
 fi
+
+if want rebuild; then
+  verify "rebuild"           "https://rebuild.trilumi.xyz/"         || note_fail
+  verify "beacon @ rebuild"  "https://rebuild.trilumi.xyz/_e/p.gif" || note_fail
+fi
+
+if want rebuild2; then
+  verify "rebuild2"           "https://rebuild2.trilumi.xyz/"         || note_fail
+  verify "beacon @ rebuild2"  "https://rebuild2.trilumi.xyz/_e/p.gif" || note_fail
+fi
+
+# The retired subpaths, asserted to be gone. A 200 here means something put
+# games-www/rebuild back, and the family is answering on two address sets again.
+for dead in "https://trilumi.xyz/rebuild/" "https://trilumi.xyz/rebuild2/" "https://trilumi.xyz/games/"; do
+  code=$(curl -sS -L --max-time 20 -o /dev/null -w '%{http_code}' "$dead" 2>/dev/null || echo "000")
+  if [ "$code" = "404" ]; then
+    printf '  gone  %-34s %s\n' "$dead" "$code"
+  else
+    printf '  LIVE  %-34s %s (expected 404)\n' "$dead" "$code"
+    note_fail
+  fi
+done
 
 # The hub is published by CI from NekoBite/TrilumiWebsite, so this only
 # confirms it is up — including its beacon, which is what makes the

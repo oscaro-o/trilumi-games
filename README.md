@@ -65,14 +65,15 @@ What this repo owns for them is `tribrand.js`, `tricard.js`, `trishare.js` and
 `tribeacon.js`; `rebuild-america/tools/modules/` holds a copy of the two it
 inlines, so a change here has to be re-copied there.
 
-One thing the pair does **not** have: a line in `deploy-family.sh`. It is not a
-row that was forgotten, and it is not a gap either — the pair carries its own
-deployer, `rebuild-america/tools/deploy.sh`. `deploy_game` here handles one
-domain per game and this pair has four addresses, two of them subpaths that live
-**outside** `public_html` on purpose so a site restore cannot wipe them — which
-`push()` refuses to write to, since it only accepts `/home/*/public_html*`.
-Giving the pair a row here would mean widening that guard on a script that
-writes to a live server, so the deployer went where the games are instead.
+The pair is two ordinary rows in `deploy-family.sh`, next to every other game.
+That was not always true. It used to answer on `trilumi.xyz/rebuild/` and
+`/rebuild2/` as well, served from `games-www/` outside `public_html` so a site
+restore could not wipe them — and `push()` here refuses to write outside
+`/home/*/public_html*`. Two address sets meant a deployer of its own, living at
+`rebuild-america/tools/deploy.sh`. Those subpaths are retired, so there is one
+address set, one deployer, and that script is gone. The verify block now asserts
+the three old subpaths are still 404 — a 200 there means the second address set
+came back.
 
 ## The lockup
 
