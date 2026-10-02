@@ -222,16 +222,27 @@ def main():
 
     # Fonts and the beacon GIF ride along in the same directory, so the
     # artifact picks them up and rsync --delete keeps them in place.
+    #
+    # The sources are scratch (downloaded from Google once); the copies in the
+    # repo are now the real ones, so a missing source is not an error — it just
+    # means this run has nothing to refresh.
     print("4. assets")
     fonts_dst = REPO / "site-academy" / "fonts"
     fonts_dst.mkdir(parents=True, exist_ok=True)
-    for f in sorted(FONTS_SRC.glob("*.woff2")):
+    found = sorted(FONTS_SRC.glob("*.woff2")) if FONTS_SRC.is_dir() else []
+    if not found:
+        print(f"  skip   {FONTS_SRC} not present; repo copies are authoritative")
+    for f in found:
         shutil.copyfile(f, fonts_dst / f.name)
         print(f"  ok     fonts/{f.name} ({f.stat().st_size:,} B)")
+
     e_dst = REPO / "site-academy" / "_e"
     e_dst.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(GIF_SRC, e_dst / "p.gif")
-    print(f"  ok     _e/p.gif ({GIF_SRC.stat().st_size} B)")
+    if GIF_SRC.is_file():
+        shutil.copyfile(GIF_SRC, e_dst / "p.gif")
+        print(f"  ok     _e/p.gif ({GIF_SRC.stat().st_size} B)")
+    else:
+        print(f"  skip   {GIF_SRC} not present; repo copy is authoritative")
 
     # Write LF explicitly: the repo stores LF, and the checkout was converted
     # to CRLF by core.autocrlf, so letting the platform decide would rewrite
