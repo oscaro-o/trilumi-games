@@ -74,7 +74,9 @@ function track(page, errors) {
   /* ======================================================== desktop ======= */
   console.log('\n══ desktop (preview sheet is the right answer) ══');
   {
-    const page = await browser.newPage({ viewport: { width: 430, height: 900 } });
+    /* Wide enough that the phone breakpoint (430px) does not apply — the
+       single-row header only exists above it. */
+    const page = await browser.newPage({ viewport: { width: 900, height: 900 } });
     const errors = [];
     track(page, errors);
     await page.goto(href);
@@ -87,7 +89,27 @@ function track(page, errors) {
     check('share button visible on load (no state yet)', await btn.isVisible());
     check('share button says 分享', (await btn.innerText()).trim() === '分享',
           JSON.stringify((await btn.innerText()).trim()));
-    check('build tag reads v3', (await page.locator('#buildtag').innerText()).trim() === 'v3');
+    check('build tag matches the service worker version', (await page.locator('#buildtag').innerText()).trim() === 'v4',
+          JSON.stringify((await page.locator('#buildtag').innerText()).trim()));
+
+    /* the button belongs in the header, in the gap between the title and the
+       language selector — not off in the footer where it was */
+    const geo = await page.evaluate(() => {
+      const r = s => { const b = document.querySelector(s).getBoundingClientRect();
+                       return { x: b.x, r: b.right, y: b.y, cy: b.y + b.height / 2, w: b.width }; };
+      const h = document.querySelector('header').getBoundingClientRect();
+      return { header: { x: h.x, r: h.right, y: h.y, b: h.bottom }, brand: r('#brand'),
+               btn: r('#trishbtn'), lang: r('.langtone') };
+    });
+    check('button is inside the header',
+          geo.btn.y >= geo.header.y && geo.btn.cy <= geo.header.b,
+          `btn.cy=${Math.round(geo.btn.cy)} header=${Math.round(geo.header.y)}..${Math.round(geo.header.b)}`);
+    check('button sits after the title and before the language selector',
+          geo.btn.x >= geo.brand.r - 1 && geo.btn.r <= geo.lang.x + 1,
+          `brand.r=${Math.round(geo.brand.r)} btn=${Math.round(geo.btn.x)}..${Math.round(geo.btn.r)} lang.x=${Math.round(geo.lang.x)}`);
+    check('button is centred in that gap',
+          Math.abs((geo.btn.x - geo.brand.r) - (geo.lang.x - geo.btn.r)) <= 24,
+          `left=${Math.round(geo.btn.x - geo.brand.r)} right=${Math.round(geo.lang.x - geo.btn.r)}`);
     await page.screenshot({ path: path.join(OUT, '1-landing.png') });
 
     /* tapping it before the game starts should offer to share the game */
@@ -170,6 +192,21 @@ function track(page, errors) {
 
     check('coarse pointer detected (preferNative is on)',
           await page.evaluate(() => window.matchMedia('(pointer: coarse)').matches));
+
+    /* the header stacks on a phone; the button takes its own row in the middle */
+    const mgeo = await page.evaluate(() => {
+      const r = s => { const b = document.querySelector(s).getBoundingClientRect();
+                       return { x: b.x, r: b.right, y: b.y, b: b.bottom }; };
+      const h = document.querySelector('header').getBoundingClientRect();
+      return { hc: h.x + h.width / 2, brand: r('#brand'), btn: r('#trishbtn'), lang: r('.langtone') };
+    });
+    check('phone: button is centred in the header',
+          Math.abs((mgeo.btn.x + mgeo.btn.r) / 2 - mgeo.hc) <= 2,
+          `btn=${Math.round((mgeo.btn.x + mgeo.btn.r) / 2)} header=${Math.round(mgeo.hc)}`);
+    check('phone: button has its own row, between the title and the language',
+          mgeo.btn.y >= mgeo.brand.b - 1 && mgeo.btn.b <= mgeo.lang.y + 1,
+          `brand.b=${Math.round(mgeo.brand.b)} btn=${Math.round(mgeo.btn.y)}..${Math.round(mgeo.btn.b)} lang.y=${Math.round(mgeo.lang.y)}`);
+
     await page.evaluate(s => window.__setState(s), finalState());
     await page.waitForTimeout(1600);
 
