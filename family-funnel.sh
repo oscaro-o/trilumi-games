@@ -31,8 +31,9 @@ else
 fi
 
 # domain:slug — the slug names the game in the report
+# The Academy is the hub, not a game: its row counts arrivals and click-outs.
 DOMAINS="
-trilumi.xyz:games-hub
+academy.trilumi.xyz:academy
 aihammer.trilumi.xyz:thor-hammer
 hetu.trilumi.xyz:hetu-luoshu
 artofwar.trilumi.xyz:sunzi-13
@@ -79,7 +80,9 @@ BEGIN {
     }
   }
   if (ev == "share")  sh++
-  if (ev == "click")  clk++
+  # "click" is what the old hub page sent; "exhibit" is what the Academy sends,
+  # and it means the same thing: a visitor walked from the hub into a game.
+  if (ev == "click" || ev == "exhibit") clk++
   if (ev == "done")   done++
   if (ev == "lang")   langswitch++
 }
@@ -100,7 +103,7 @@ AWK
 
 label() {
   case "$1" in
-    games-hub)   echo "Games hub" ;;
+    academy)     echo "Academy (hub)" ;;
     thor-hammer) echo "Thor's Hammer" ;;
     hetu-luoshu) echo "Lo Shu" ;;
     sunzi-13)    echo "Art of War" ;;
@@ -109,11 +112,18 @@ label() {
   esac
 }
 
+# The Academy shares VH_ROOT with the main site (docRoot $VH_ROOT/academy), so
+# its log sits in /home/trilumi.xyz/logs rather than in a docroot of its own.
 logs_for() {
   local d="$1" out="" f
-  for f in /home/"$d"/logs/"$d".access_log*; do
-    [ -f "$f" ] && out="$out $f"
-  done
+  case "$d" in
+    academy.trilumi.xyz) for f in /home/trilumi.xyz/logs/"$d".access_log*; do
+                           [ -f "$f" ] && out="$out $f"
+                         done ;;
+    *)                   for f in /home/"$d"/logs/"$d".access_log*; do
+                           [ -f "$f" ] && out="$out $f"
+                         done ;;
+  esac
   printf '%s' "$out"
 }
 
@@ -191,6 +201,10 @@ Notes
   from ...    referrer host, deduped per session. "self" is an internal nav;
               another game's domain means the family is feeding itself.
 
-The hub's own row counts arrivals. A game row showing "from trilumi.xyz"
-is traffic the hub sent it — that number is the hub earning its keep.
+The Academy row counts arrivals at the hub. Its hub-clk column is the number
+of exhibits walked into, so arrivals minus click-outs is the traffic the hub
+lost — the only place that number exists, because a game can only see the
+visitors who reached it.
+
+A game row showing "from academy.trilumi.xyz" is traffic the hub sent it.
 NOTES
