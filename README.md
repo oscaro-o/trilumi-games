@@ -1,11 +1,11 @@
 # trilumi · games
 
-The shared layer under the four games, listed at [academy.trilumi.xyz](https://academy.trilumi.xyz/).
+The shared layer under the games, listed at [academy.trilumi.xyz](https://academy.trilumi.xyz/).
 
 Each game is a single HTML file with no dependencies, living in its own repo.
-That is the right shape for a game, but it means four codebases that drift.
+That is the right shape for a game, but it means several codebases that drift.
 This repo holds the parts that must *not* drift: the brand signature, the share
-card renderer, the beacon, the hub page, and the tools that keep them in sync.
+card renderer, the beacon, and the tools that keep them in sync.
 
 ```
 tribrand.js       the lockup — three-polygon mark + TRILUMI wordmark
@@ -33,6 +33,8 @@ make-hub-og.py    renders games/og.png
 | 「发明」河图洛书 | `hetu-luoshu` | [hetu.trilumi.xyz](https://hetu.trilumi.xyz/) | TRICARD | own |
 | 「发明」孙子兵法 | `sunzi-13` | [artofwar.trilumi.xyz](https://artofwar.trilumi.xyz/) | own + meme | yes |
 | 你在哪一格 | `coordinate-thinking-game` | [whereami.trilumi.xyz](https://whereami.trilumi.xyz/) | TRICARD | yes |
+| 再建美国 · 1861 | `rebuild-america` | [rebuild.trilumi.xyz](https://rebuild.trilumi.xyz/) | TRICARD | yes |
+| 再造政府 · 1933 | `rebuild-america` | [rebuild2.trilumi.xyz](https://rebuild2.trilumi.xyz/) | TRICARD | yes |
 
 Two of the games grew their own share-card code before this layer existed.
 They keep it — rewriting a card that already works to prove a point is not
@@ -41,6 +43,36 @@ worth the risk. New cards use `TRICARD`. Both paths carry the same stamp.
 `hetu-luoshu` runs its own tracker, written before this one and slightly
 richer. It is deliberately **not** given a second beacon: two trackers on one
 page double-count every event in the log.
+
+## The diptych
+
+**Two games, one repo** — deliberately. 再建美国与再造政府 argue a single thing
+between them: Lincoln rebuilt the country, Roosevelt rebuilt its government.
+Split across two repositories they stop arguing it.
+
+They are also the only pair in the family that carries **all three languages**,
+English by default. That is worth noting here because it changes what the
+beacon means: `l` is now a real dimension for them, not a constant, and a link
+can pin one with `?lang=en` / `?lang=hant` / `?lang=hans`.
+
+Their build chain lives with them, in
+[`rebuild-america/tools/`](https://github.com/oscaro-o/rebuild-america/tree/main/tools)
+— `brand.py` → `card.py` → `i18n.py`, three stages, reproducing both files byte
+for byte from the original commit. `apply.py` here does not know about them, on
+purpose: its anchors are per-game and per-palette, and folding a pair that
+already builds cleanly into it would mean rewriting patch functions that work.
+What this repo owns for them is `tribrand.js`, `tricard.js`, `trishare.js` and
+`tribeacon.js`; `rebuild-america/tools/modules/` holds a copy of the two it
+inlines, so a change here has to be re-copied there.
+
+One thing the pair does **not** have: a line in `deploy-family.sh`. It is not a
+row that was forgotten, and it is not a gap either — the pair carries its own
+deployer, `rebuild-america/tools/deploy.sh`. `deploy_game` here handles one
+domain per game and this pair has four addresses, two of them subpaths that live
+**outside** `public_html` on purpose so a site restore cannot wipe them — which
+`push()` refuses to write to, since it only accepts `/home/*/public_html*`.
+Giving the pair a row here would mean widening that guard on a script that
+writes to a live server, so the deployer went where the games are instead.
 
 ## The lockup
 
