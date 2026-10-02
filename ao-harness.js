@@ -81,8 +81,26 @@ function makeContext(canvas) {
   ctx.moveTo = (...a) => rec('moveTo', a);
   ctx.lineTo = (...a) => rec('lineTo', a);
   ctx.arc = (...a) => rec('arc', a);
+  ctx.arcTo = (...a) => rec('arcTo', a);
+  ctx.ellipse = (...a) => rec('ellipse', a);
+  ctx.rect = (...a) => rec('rect', a);
+  ctx.roundRect = (...a) => rec('roundRect', a);
   ctx.quadraticCurveTo = (...a) => rec('quadraticCurveTo', a);
   ctx.bezierCurveTo = (...a) => rec('bezierCurveTo', a);
+  const grad = () => ({ addColorStop() {} });
+  ctx.createLinearGradient = grad;
+  ctx.createRadialGradient = grad;
+  ctx.createConicGradient = grad;
+  ctx.createPattern = () => null;
+  ctx.setLineDash = () => {};
+  ctx.getLineDash = () => [];
+  ctx.getImageData = (x, y, w, h) =>
+    ({ width: w || 1, height: h || 1, data: new Uint8ClampedArray((w || 1) * (h || 1) * 4) });
+  ctx.putImageData = () => {};
+  ctx.createImageData = (w, h) =>
+    ({ width: w, height: h, data: new Uint8ClampedArray(w * h * 4) });
+  ctx.isPointInPath = () => false;
+  ctx.drawFocusIfNeeded = () => {};
   ctx.fill = () => rec('fill', []);
   ctx.stroke = () => rec('stroke', []);
   ctx.save = () => rec('save', []);
@@ -96,13 +114,24 @@ function makeContext(canvas) {
   return ctx;
 }
 
+/* CSSStyleDeclaration: pages write both `el.style.foo = x` and
+   `el.style.setProperty('--x', y)`, and the second is a method, not a key */
+class Style {
+  constructor() { this._p = Object.create(null); }
+  setProperty(k, v) { this._p[k] = String(v); }
+  getPropertyValue(k) { return this._p[k] || ''; }
+  removeProperty(k) { const v = this._p[k] || ''; delete this._p[k]; return v; }
+  get cssText() { return Object.keys(this._p).map((k) => k + ':' + this._p[k]).join(';'); }
+  set cssText(v) { this._p = Object.create(null); }
+}
+
 class El {
   constructor(tag, id) {
     this.tagName = (tag || 'div').toUpperCase();
     this.id = id || '';
     this._html = '';
     this.children = [];
-    this.style = {};
+    this.style = new Style();
     this.attrs = {};
     this.textContent = '';
     this.onclick = null;
@@ -122,9 +151,45 @@ class El {
   getAttribute(k) { return this.attrs[k] === undefined ? null : this.attrs[k]; }
   removeAttribute(k) { delete this.attrs[k]; }
   hasAttribute(k) { return k in this.attrs; }
+  /* every page here opens with classList.add('js'), and the academy's
+     lighting depends on it, so it has to be real rather than absent */
+  get classList() {
+    const self = this;
+    const list = () => String(self.className || '').split(/\s+/).filter(Boolean);
+    const set = (arr) => { self.className = arr.join(' '); };
+    return {
+      add(...c) { const s = list(); c.forEach((x) => { if (!s.includes(x)) s.push(x); }); set(s); },
+      remove(...c) { set(list().filter((x) => !c.includes(x))); },
+      toggle(c, on) {
+        const has = list().includes(c);
+        const want = on === undefined ? !has : !!on;
+        if (want && !has) this.add(c);
+        if (!want && has) this.remove(c);
+        return want;
+      },
+      contains: (c) => list().includes(c),
+      get length() { return list().length; },
+      item: (i) => list()[i] || null,
+      toString: () => list().join(' '),
+    };
+  }
   appendChild(c) { c.parent = this; this.children.push(c); return c; }
   removeChild(c) { this.children = this.children.filter((x) => x !== c); return c; }
   remove() { if (this.parent) this.parent.removeChild(this); }
+  /* the language switcher walks its own buttons; returns a plain array, which
+     is enough for .length and indexing */
+  getElementsByTagName(tag) {
+    const want = String(tag).toUpperCase();
+    const out = [];
+    const walk = (n) => {
+      for (const c of n.children || []) {
+        if (c.tagName === want) out.push(c);
+        walk(c);
+      }
+    };
+    walk(this);
+    return out;
+  }
   insertBefore(c, ref) {
     c.parent = this;
     const i = this.children.indexOf(ref);
@@ -136,6 +201,22 @@ class El {
     if (this.listeners[t]) this.listeners[t] = this.listeners[t].filter((x) => x !== f);
   }
   click() { this._clicked = (this._clicked || 0) + 1; }
+  /* enough of Element.closest() for delegated click handling: #id, .class,
+     tag, and tag[attr]. Walks the parent chain the stubs maintain. */
+  closest(sel) {
+    let el = this;
+    while (el) {
+      if (matchesSel(el, sel)) return el;
+      el = el.parent;
+    }
+    return null;
+  }
+  /* a plausible box: layout is not simulated, but code that reads a size to
+     size a canvas needs a number rather than undefined */
+  getBoundingClientRect() {
+    return { x: 0, y: 0, top: 0, left: 0, right: 390, bottom: 300,
+             width: 390, height: 300, toJSON() { return this; } };
+  }
   getContext() { if (!this._ctx) this._ctx = makeContext(this); return this._ctx; }
   toDataURL() { return 'data:image/png;base64,STUB'; }
   toBlob(cb) { if (cb) cb({ size: 1, type: 'image/png' }); }
@@ -164,8 +245,12 @@ class El {
 }
 
 /* An Image whose load fires asynchronously, like a real one. Synchronous
-   completion would hide the bug where onload is attached after src. */
-function makeImage(sandbox) {
+   completion would hide the bug where onload is attached after src.
+
+   Every src assignment is recorded in `sink`, which is how the first-party
+   beacon gets tested: a beacon is nothing but an Image pointed at a URL, so
+   the only way to assert it fired is to watch what was requested. */
+function makeImage(sink) {
   return function Image() {
     const el = new El('img');
     el.complete = false;
@@ -178,6 +263,7 @@ function makeImage(sandbox) {
       get() { return _src; },
       set(v) {
         _src = v;
+        if (sink) sink.push(String(v));
         el.complete = false;
         setTimeout(() => {
           if (String(v).indexOf('data:image/') === 0) {
@@ -201,6 +287,24 @@ const DOM = {
   documentElement: null,
 };
 
+/* A deliberately small CSS matcher for `closest`: #id, .class, tag and
+   tag[attr]. Anything more elaborate belongs in a real browser. */
+function matchesSel(el, sel) {
+  const s = String(sel).trim();
+  const m = /^([a-z0-9-]*)(#[\w-]+)?(\.[\w-]+)?(\[[\w-]+\])?$/i.exec(s);
+  if (!m) return false;
+  const [, tag, id, cls, attr] = m;
+  if (tag && String(el.tagName || '').toLowerCase() !== tag.toLowerCase()) return false;
+  if (id && String(el.id || '') !== id.slice(1)) return false;
+  if (cls) {
+    const want = cls.slice(1);
+    const have = String(el.className || '').split(/\s+/);
+    if (!have.includes(want)) return false;
+  }
+  if (attr && !(attr.slice(1, -1) in (el.attrs || {}))) return false;
+  return true;
+}
+
 function buildDocument() {
   const doc = {
     documentElement: new El('html'),
@@ -208,17 +312,36 @@ function buildDocument() {
     head: new El('head'),
     referrer: '',
     title: '',
-    readyState: 'complete',
+    /* An inline <script> runs while the parser is still working, so a page
+       that needs something declared further down its own script block has to
+       wait for DOMContentLoaded. Reporting 'complete' here would hide that
+       class of ordering bug instead of catching it. */
+    readyState: 'loading',
     createElement: (t) => new El(t),
     execCommand: () => true,
+    fonts: {
+      ready: Promise.resolve(),
+      status: 'loaded',
+      load: () => Promise.resolve([]),
+      check: () => true,
+      add() {}, delete() {}, clear() {},
+      addEventListener() {}, removeEventListener() {},
+      forEach() {}, [Symbol.iterator]() { return [][Symbol.iterator](); },
+    },
     getElementById(id) {
       if (!DOM.byId[id]) DOM.byId[id] = new El('div', id);
       return DOM.byId[id];
     },
     querySelector: (s) => (s && s[0] === '#' ? doc.getElementById(s.slice(1)) : new El('div')),
     querySelectorAll: () => [],
-    addEventListener: () => {},
-    removeEventListener: () => {},
+    /* a real registry, so delegated listeners (the beacon's click handler)
+       can actually be dispatched instead of being silently dropped */
+    _listeners: Object.create(null),
+    addEventListener(t, f) { (doc._listeners[t] = doc._listeners[t] || []).push(f); },
+    removeEventListener(t, f) {
+      if (doc._listeners[t]) doc._listeners[t] = doc._listeners[t].filter((x) => x !== f);
+    },
+    dispatch(t, ev) { (doc._listeners[t] || []).slice().forEach((f) => f(ev)); },
     createTextNode: (t) => ({ nodeType: 3, textContent: t }),
   };
   doc.documentElement.setAttribute('lang', 'zh-Hans');
@@ -242,22 +365,36 @@ function makeStorage(seed) {
 }
 
 /* -------------------------------------------------------------- runner --- */
-function extractScript(html) {
-  /* last <script> block is the game; the first one may be structured data */
-  const i = html.lastIndexOf('<script>');
-  const j = html.lastIndexOf('</script>');
-  if (i < 0 || j < 0) throw new Error('no script block found');
-  return html.slice(i + '<script>'.length, j);
+/* Every inline <script> in document order, minus external ones and minus
+   non-JS payloads (application/ld+json). A page may have several — the
+   academy has three, and its beacon is now the last of them, so taking only
+   the final block would silently boot the wrong thing. */
+function extractScripts(html) {
+  const out = [];
+  const re = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
+  let m;
+  while ((m = re.exec(html))) {
+    const attrs = m[1] || '';
+    if (/\bsrc\s*=/i.test(attrs)) continue;
+    const tm = /type\s*=\s*["']?([^"'\s>]+)/i.exec(attrs);
+    if (tm && !/^(text\/javascript|module|application\/javascript)$/i.test(tm[1])) continue;
+    if (m[2].trim()) out.push(m[2]);
+  }
+  return out;
 }
 
 function run(file, opts) {
   opts = opts || {};
   const html = fs.readFileSync(file, 'utf8');
-  const js = extractScript(html);
+  const scripts = extractScripts(html);
+  if (!scripts.length) throw new Error('no inline script block found');
+  const js = scripts.join('\n;\n');
 
   const doc = buildDocument();
+  if (opts.referrer) doc.referrer = opts.referrer;
   const warnings = [];
   const errors = [];
+  const imgRequests = [];
 
   const localStorage = makeStorage(opts.storage);
   const sessionStorage = makeStorage();
@@ -275,7 +412,7 @@ function run(file, opts) {
     location: {
       hostname: opts.host || 'artofwar.trilumi.xyz',
       href: 'https://' + (opts.host || 'artofwar.trilumi.xyz') + '/',
-      search: '',
+      search: opts.search || '',
       hash: '',
       pathname: '/',
       protocol: 'https:',
@@ -287,12 +424,13 @@ function run(file, opts) {
     devicePixelRatio: 2,
     URL,
     URLSearchParams,
-    Image: makeImage(),
+    Image: makeImage(imgRequests),
     Blob: function Blob() {},
     setTimeout,
     clearTimeout,
     setInterval,
     clearInterval,
+    performance: { now: () => Date.now(), timeOrigin: Date.now() },
     Date,
     Math,
     JSON,
@@ -317,6 +455,33 @@ function run(file, opts) {
   sandbox.window.scrollTo = () => {};
   sandbox.window.matchMedia = () => ({ matches: false, addListener() {}, addEventListener() {} });
   sandbox.window.scrollY = 0;
+
+  /* animation loops: a real requestAnimationFrame never returns, so give it a
+     frame budget. Without one the harness hangs instead of reporting. */
+  let frames = 0;
+  const FRAME_BUDGET = opts.frames == null ? 8 : opts.frames;
+  sandbox.requestAnimationFrame = (cb) =>
+    (++frames <= FRAME_BUDGET) ? setTimeout(() => cb(frames * 16), 0) : 0;
+  sandbox.cancelAnimationFrame = () => {};
+  sandbox.window.requestAnimationFrame = sandbox.requestAnimationFrame;
+  sandbox.window.cancelAnimationFrame = sandbox.cancelAnimationFrame;
+
+  /* IntersectionObserver: nothing ever intersects in a headless page, which is
+     exactly the no-JS / reduced-motion path the academy falls back to */
+  class IO {
+    constructor(cb, o) { this.cb = cb; this.opts = o || {}; this.roots = []; }
+    observe(el) { this.roots.push(el); }
+    unobserve() {} disconnect() {} takeRecords() { return []; }
+  }
+  sandbox.IntersectionObserver = IO;
+  sandbox.window.IntersectionObserver = IO;
+
+  sandbox.matchMedia = sandbox.window.matchMedia;
+  sandbox.devicePixelRatio = 2;
+
+  /* Font Loading API — document.fonts.ready is awaited by anything that wants
+     to measure text after the webfont settles */
+  sandbox.FontFace = function FontFace() { return { load: () => Promise.resolve() }; };
   sandbox.window.pageYOffset = 0;
   sandbox.window.location = sandbox.location;
   sandbox.window.document = doc;
@@ -329,10 +494,18 @@ function run(file, opts) {
 
   const ctx = vm.createContext(sandbox);
   vm.runInContext(js, ctx, { filename: path.basename(file) });
-  return { sandbox, doc, ctx, warnings, errors, js };
+
+  /* Parsing is done, so fire the event a browser would: this is the moment
+     deferred init code gets to run, and it is where a use-before-definition
+     bug in the top level of a script block finally surfaces. */
+  doc.readyState = 'interactive';
+  doc.dispatch('DOMContentLoaded', { type: 'DOMContentLoaded', target: doc });
+  doc.readyState = 'complete';
+
+  return { sandbox, doc, ctx, warnings, errors, js, scripts, imgRequests };
 }
 
-module.exports = { run, measure, makeContext, El, DOM, makeStorage };
+module.exports = { run, measure, makeContext, El, DOM, makeStorage, extractScripts };
 
 /* ---------------------------------------------------------------- main --- */
 if (require.main === module) {

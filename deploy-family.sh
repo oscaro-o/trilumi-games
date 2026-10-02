@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 #
-# Deploy the whole game family: the hub page, the four patched games, and the
-# beacon every one of them reports to.
+# Deploy the game family: the four patched games, and the beacon each one
+# reports to.
 #
-#   bash brand/deploy-family.sh              deploy everything
+#   bash brand/deploy-family.sh              deploy every game
 #   bash brand/deploy-family.sh --check      show what would move, touch nothing
-#   bash brand/deploy-family.sh hub          deploy only the hub
-#   bash brand/deploy-family.sh aihammer     deploy only one game
+#   bash brand/deploy-family.sh artofwar     deploy only one game
+#
+# The hub is NOT here any more. academy.trilumi.xyz replaced trilumi.xyz/games
+# and is published by NekoBite/TrilumiWebsite (site-academy/) through its own
+# GitHub Actions workflow — see docs/academy.md there. The old target is gone
+# rather than left dormant, because it would have written the retired page
+# back over the top.
 #
 # tar over ssh, because neither end has rsync. Ownership is taken from the
 # parent directory so OpenLiteSpeed can actually read what lands.
@@ -96,14 +101,6 @@ deploy_game() {
   push "beacon" "/home/$domain/public_html/_e" brand/beacon p.gif
 }
 
-# ---------------------------------------------------------------- the hub
-
-if want hub; then
-  title "hub  ·  trilumi.xyz/games/"
-  push "games hub" "/home/trilumi.xyz/public_html/games" brand/games index.html og.png
-  push "beacon"    "/home/trilumi.xyz/public_html/_e"   brand/beacon p.gif
-fi
-
 # ---------------------------------------------------------------- the games
 
 if want aihammer; then deploy_game aihammer aihammer.trilumi.xyz thor-hammer; fi
@@ -122,12 +119,6 @@ title "verify"
 if [ "$CHECK" = "1" ]; then
   say "  (check only — nothing was written)"
   exit 0
-fi
-
-if want hub; then
-  verify "hub page"          "https://trilumi.xyz/games/"         || note_fail
-  verify "hub og.png"        "https://trilumi.xyz/games/og.png"   || note_fail
-  verify "beacon @ trilumi"  "https://trilumi.xyz/_e/p.gif"       || note_fail
 fi
 
 if want aihammer; then
@@ -149,6 +140,12 @@ if want hetu; then
   verify "hetu-luoshu"       "https://hetu.trilumi.xyz/"         || note_fail
   verify "beacon @ hetu"     "https://hetu.trilumi.xyz/_e/p.gif" || note_fail
 fi
+
+# The hub is published by CI from NekoBite/TrilumiWebsite, so this only
+# confirms it is up — including its beacon, which is what makes the
+# "card -> academy -> game" hop visible at all.
+verify "academy (hub)"     "https://academy.trilumi.xyz/"         || note_fail
+verify "beacon @ academy"  "https://academy.trilumi.xyz/_e/p.gif" || note_fail
 
 say ""
 if [ "$FAILED" = "1" ]; then
