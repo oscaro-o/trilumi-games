@@ -6,3 +6,11 @@
 # python
 __pycache__/
 *.pyc
+
+# build outputs — regenerate with make-meme-data.py from memes/*.png
+meme-data.js
+_card_*.json
+_card_*.png
+_sheet*.png
+_all15.png
+_cmp.png

@@ -1,6 +1,6 @@
 # trilumi · games
 
-The shared layer under the four games at [trilumi.xyz/games](https://trilumi.xyz/games/).
+The shared layer under the four games, listed at [academy.trilumi.xyz](https://academy.trilumi.xyz/).
 
 Each game is a single HTML file with no dependencies, living in its own repo.
 That is the right shape for a game, but it means four codebases that drift.
@@ -12,11 +12,15 @@ tribrand.js       the lockup — three-polygon mark + TRILUMI wordmark
 tricard.js        one share-card renderer for the whole family
 trishare.js       the share sheet (preview → save / copy / native share)
 tribeacon.js      first-party beacon, off except on *.trilumi.xyz
-games/            the hub page served at trilumi.xyz/games/
+memes/            fifteen ending memes, one per ending per language
 beacon/p.gif      the 42-byte 1x1 GIF the beacon reports to
 apply.py          inlines the modules into each game, with assertions
 check-layout.js   renders every card headlessly and checks the geometry
-deploy-family.sh  pushes the hub, the games and the beacon
+deploy-family.sh  pushes the games and the beacon
+patch-academy.py  repoints every brand link at the academy
+patch-ao-card.py  the Art of War share card: reachable, visible, memed
+make-meme-data.py packs memes/ into the base64 the games embed
+render-card.py    replays a recorded card onto a real image, for eyeballing
 family-funnel.sh  reads the beacon back out of the server logs
 make-hub-og.py    renders games/og.png
 ```
@@ -27,7 +31,7 @@ make-hub-og.py    renders games/og.png
 |---|---|---|---|---|
 | Everyone Got Thor's Hammer | `thor-hammer` | [aihammer.trilumi.xyz](https://aihammer.trilumi.xyz/) | own | yes |
 | 「发明」河图洛书 | `hetu-luoshu` | [hetu.trilumi.xyz](https://hetu.trilumi.xyz/) | TRICARD | own |
-| 「发明」孙子兵法 | `sunzi-13` | [artofwar.trilumi.xyz](https://artofwar.trilumi.xyz/) | own | yes |
+| 「发明」孙子兵法 | `sunzi-13` | [artofwar.trilumi.xyz](https://artofwar.trilumi.xyz/) | own + meme | yes |
 | 你在哪一格 | `coordinate-thinking-game` | [whereami.trilumi.xyz](https://whereami.trilumi.xyz/) | TRICARD | yes |
 
 Two of the games grew their own share-card code before this layer existed.

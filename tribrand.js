@@ -16,7 +16,7 @@
    ========================================================================== */
 var TRILUMI = (function () {
   var BLUE = '#004AAD';
-  var HREF = 'https://trilumi.xyz/games/';
+  var HREF = 'https://academy.trilumi.xyz/';
   var SANS = '"Segoe UI","Helvetica Neue",Helvetica,"Microsoft YaHei",' +
              '"PingFang SC","Hiragino Sans GB",Arial,sans-serif';
 
@@ -107,7 +107,7 @@ var TRILUMI = (function () {
       c.save();
       c.font = '400 ' + Math.round(ws * 0.82) + 'px ' + SANS;
       c.fillStyle = opts.muted || '#8c8478';
-      c.fillText('trilumi.xyz/games', x, y + bs + ws * 1.16);
+      c.fillText(opts.addr || 'academy.trilumi.xyz', x, y + bs + ws * 1.16);
       c.restore();
     }
     return w;

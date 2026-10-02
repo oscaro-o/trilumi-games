@@ -256,7 +256,7 @@ var TRICARD = (function () {
     }
     if (spec.quote) out.push('', spec.quote);
     if (spec.footer) out.push('', spec.footer);
-    out.push('', 'trilumi.xyz/games');
+    out.push('', 'academy.trilumi.xyz');
     return out.join('\n');
   }
 
