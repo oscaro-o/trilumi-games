@@ -1,6 +1,7 @@
 # scratch
 .verify/
 .deploy-check.tmp
+_ao-shots/
 *.tmp
 
 # python

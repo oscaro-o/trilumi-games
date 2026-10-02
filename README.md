@@ -16,6 +16,7 @@ memes/            fifteen ending memes, one per ending per language
 beacon/p.gif      the 42-byte 1x1 GIF the beacon reports to
 apply.py          inlines the modules into each game, with assertions
 check-layout.js   renders every card headlessly and checks the geometry
+ao-share-test.js  runs a game in headless Chromium and taps the share button
 deploy-family.sh  pushes the games and the beacon
 patch-academy.py  repoints every brand link at the academy
 patch-ao-card.py  the Art of War share card: reachable, visible, memed
@@ -123,6 +124,21 @@ a canvas 2D context, measures text with a width table (CJK full width, Latin
 roughly half), and renders every card in every language. It catches overflow
 and collision, not kerning — which is enough: it has already caught a title
 that ran 1,367px off the edge of a 1,080px card in English only.
+
+`ao-share-test.js` is the one check that needs a browser, and it is worth the
+dependency. Playwright's Chromium is already on this machine
+(`~/AppData/Local/ms-playwright/chromium-1243`), so it runs offline. It opens a
+game twice — once as a desktop, once as an iPhone — and asserts that the share
+button is **visible on load**, that a cold tap opens the sheet, that the sheet
+carries the card and the five link targets, that a phone tap reaches
+`navigator.share` with the file in one go, and that a refused share says so
+instead of doing nothing. That last one is the failure mode a screenshot cannot
+see and a source read cannot prove.
+
+```bash
+NODE_PATH=~/.workbuddy-ai/binaries/node/workspace/node_modules \
+  node brand/ao-share-test.js          # screenshots land in brand/_ao-shots/
+```
 
 ## Deploying
 

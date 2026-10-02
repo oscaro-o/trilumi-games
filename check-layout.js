@@ -323,14 +323,17 @@ for (const spec of SPECS) {
     fail(spec, `wordmark spans ${Math.round(word.x0)}..${Math.round(word.x1)}, outside the card`);
   }
 
-  /* 4 · the series address is on the card */
-  if (!c.texts.some((t) => t.s === 'trilumi.xyz/games')) {
+  /* 4 · the series address is on the card.
+     This used to assert 'trilumi.xyz/games', which the academy replaced — so
+     the check failed for all six games, including ones nobody had touched, and
+     a verifier that always fails is a verifier nobody reads. */
+  if (!c.texts.some((t) => t.s === 'academy.trilumi.xyz')) {
     fail(spec, 'series address missing from the card');
   }
 
   /* 5 · for the TRICARD cards, the footer band must not run off the bottom */
   if (spec.kind === 'tricard') {
-    const url = c.texts.find((t) => t.s === 'trilumi.xyz/games');
+    const url = c.texts.find((t) => t.s === 'academy.trilumi.xyz');
     if (url && url.y > H - 40) fail(spec, `address sits ${Math.round(H - url.y)}px from the bottom edge`);
     if (url && url.y < H - 100) fail(spec, `address floats ${Math.round(H - url.y)}px above the bottom`);
   }
