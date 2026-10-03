@@ -99,12 +99,27 @@ note_fail() { FAILED=1; }
 # assert that the service worker answering on the wire is the one in the repo.
 # Without this a VERSION bump can sit in git forever and no returning visitor
 # ever receives it — the failure looks exactly like "I don't see the changes".
+# Two ways this check used to lie, both fixed 2026-10-03:
+#
+#   · the pattern required `const VERSION`, so hetu-luoshu and create-world —
+#     both of which declare `var VERSION` — matched nothing and the function
+#     returned 0. A check that silently checks nothing is worse than no check,
+#     because it is counted as coverage. Two of the three games it is called on
+#     were never actually verified.
+#   · "no VERSION found" and "this game ships no service worker" were the same
+#     branch. They are not the same thing: the first is a broken pattern and has
+#     to be loud, the second is normal.
 verify_sw() {
   local label="$1" domain="$2" srcdir="$3" want got
-  want=$(sed -n 's/.*const VERSION *= *"\([^"]*\)".*/\1/p' "$ROOT/$srcdir/sw.js" 2>/dev/null | head -1)
-  if [ -z "$want" ]; then return 0; fi
+  [ -f "$ROOT/$srcdir/sw.js" ] || return 0     # this game ships no sw.js
+  want=$(sed -n 's/.*\(var\|const\|let\) VERSION *= *"\([^"]*\)".*/\2/p' \
+           "$ROOT/$srcdir/sw.js" | head -1)
+  if [ -z "$want" ]; then
+    printf '  FAIL  %-42s cannot read VERSION from %s/sw.js\n' "$label (sw)" "$srcdir"
+    return 1
+  fi
   got=$(curl -sS -L --max-time 25 "https://$domain/sw.js" 2>/dev/null |
-        sed -n 's/.*const VERSION *= *"\([^"]*\)".*/\1/p' | head -1)
+        sed -n 's/.*\(var\|const\|let\) VERSION *= *"\([^"]*\)".*/\2/p' | head -1)
   if [ "$got" = "$want" ]; then
     printf '  ok    %-42s %s\n' "$label (sw)" "$got"
   else
