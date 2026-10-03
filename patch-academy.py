@@ -84,7 +84,13 @@ def main():
         if check:
             print("  ok  %-12s would patch (%d edits)" % (slug, total))
         else:
-            path.write_text(after, encoding="utf-8")
+            # newline="\n": read_text() uses universal newlines so `after` is
+            # LF-only, and write_text() with the default newline=None would
+            # translate every \n to os.linesep — CRLF on Windows. The result
+            # still runs, but the working tree stops matching the git blob
+            # (`.gitattributes` normalises on commit, so `git status` says
+            # nothing) and the live byte count stops matching the repo.
+            path.write_text(after, encoding="utf-8", newline="\n")
             detail = " ".join("%s=%d" % (l, c) for l, c in counts if c)
             print("  ok  %-12s patched (%s)" % (slug, detail))
 

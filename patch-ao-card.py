@@ -26,12 +26,18 @@ Idempotent: every edit is a no-op on a second run. Run:
 
 Line endings
 ------------
-These game files are CRLF. Anchors here are written with plain newlines and it
-still works because read_text/write_text use universal newlines: CRLF collapses
-to LF on read, and LF expands back to os.linesep on write. That is exactly what
-apply.py relies on, and it is why opening these files with newline="" instead
-makes every multi-line anchor miss. It is also why this only round-trips on
-Windows — run it on Linux and the whole file silently becomes LF.
+Anchors here are written with plain newlines, and read_text() uses universal
+newlines, so CRLF in the target collapses to LF before any anchor is matched.
+That is why opening these files with newline="" would make every multi-line
+anchor miss.
+
+The write is pinned with newline="\n". It used to be left to the default, which
+translates \n to os.linesep — CRLF on Windows. The game still ran, so nothing
+looked wrong, but the working tree stopped matching the git blob (which
+`.gitattributes` normalises to LF, so `git status` reported the tree clean) and
+the deployed file stopped matching the repo by one byte per line. This script
+therefore produced a different file on Windows than on Linux; now it produces
+the same file on both, and that file is LF.
 """
 import os
 import sys
@@ -388,7 +394,10 @@ def apply():
                          "card+sheet modules")
     steps.append(("card+sheet", did))
 
-    Path(TARGET).write_text(text, encoding="utf-8")
+    # newline="\n" — see the note at the top of this file about universal
+    # newlines. Without it write_text() emits CRLF on Windows and the working
+    # tree stops matching the blob that git stores.
+    Path(TARGET).write_text(text, encoding="utf-8", newline="\n")
 
     for label, did in steps:
         print("  %-16s %s" % (label, "applied" if did else "already present"))

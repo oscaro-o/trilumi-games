@@ -342,7 +342,10 @@ figcaption span{{font-size:11px;letter-spacing:.1em;text-transform:uppercase;
 </body>
 </html>
 """
-    OUT.write_text(page, encoding="utf-8")
+    # newline="\n": the default would turn every \n into CRLF on Windows, and
+    # this page is opened next to the deployed cards — a preview that is 200
+    # bytes bigger than the file git stores is one more false signal.
+    OUT.write_text(page, encoding="utf-8", newline="\n")
     print(f"wrote {OUT}  {OUT.stat().st_size:,} bytes  ({len(SPECS)} cards)")
 
 

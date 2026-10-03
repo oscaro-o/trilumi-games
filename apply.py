@@ -399,7 +399,16 @@ def main():
         if args.check:
             print(f"  ok  {slug}: would patch ({delta:+,} bytes)")
         else:
-            path.write_text(after, encoding="utf-8")
+            # newline="\n" is load-bearing. read_text() uses universal newlines,
+            # so `before` is LF-only; write_text() with the default newline=None
+            # then translates every \n to os.linesep — CRLF on Windows. That is
+            # how thor-hammer, hetu-luoshu and whereami ended up CRLF in the
+            # working tree while their git blobs were LF: .gitattributes declares
+            # `*.html text eol=lf`, so git normalises on commit and `git status`
+            # reports nothing. The only visible symptom is that the live file is
+            # a few hundred bytes larger than the local one — which is exactly
+            # the comparison anyone makes first when a deploy looks broken.
+            path.write_text(after, encoding="utf-8", newline="\n")
             print(f"  ok  {slug}: patched ({delta:+,} bytes)")
 
     print()
