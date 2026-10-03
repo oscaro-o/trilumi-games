@@ -35,7 +35,10 @@ function check(label, ok, extra) {
   if (!ok) fails++;
 }
 
-/* the same shape the game builds after thirteen chapters */
+/* A minimal stand-in for the state the game builds after thirteen chapters:
+   only the fields these assertions need. The scroll's `his` is deliberately
+   left out, and that is what caught esc() printing the literal word
+   "undefined" into the page for any field a caller had not set. */
 function finalState() {
   const say = ['先算清再动兵', '粮道比勇气重要', '不打没准备的仗', '耐心是最便宜的兵',
     '怒气不能当将军', '先到的人定规矩', '示弱是为了让他过来', '地形替我省一半人',
@@ -89,27 +92,30 @@ function track(page, errors) {
     check('share button visible on load (no state yet)', await btn.isVisible());
     check('share button says 分享', (await btn.innerText()).trim() === '分享',
           JSON.stringify((await btn.innerText()).trim()));
-    check('build tag matches the service worker version', (await page.locator('#buildtag').innerText()).trim() === 'v4',
+    check('build tag matches the service worker version', (await page.locator('#buildtag').innerText()).trim() === 'v9',
           JSON.stringify((await page.locator('#buildtag').innerText()).trim()));
 
-    /* the button belongs in the header, in the gap between the title and the
-       language selector — not off in the footer where it was */
+    /* the pair belongs in the header, in the gap between the title and the
+       language selector — not off in the footer where the share button was */
     const geo = await page.evaluate(() => {
       const r = s => { const b = document.querySelector(s).getBoundingClientRect();
                        return { x: b.x, r: b.right, y: b.y, cy: b.y + b.height / 2, w: b.width }; };
       const h = document.querySelector('header').getBoundingClientRect();
       return { header: { x: h.x, r: h.right, y: h.y, b: h.bottom }, brand: r('#brand'),
-               btn: r('#trishbtn'), lang: r('.langtone') };
+               btn: r('#trishbtn'), acts: r('.headacts'), lang: r('.langtone') };
     });
     check('button is inside the header',
           geo.btn.y >= geo.header.y && geo.btn.cy <= geo.header.b,
           `btn.cy=${Math.round(geo.btn.cy)} header=${Math.round(geo.header.y)}..${Math.round(geo.header.b)}`);
-    check('button sits after the title and before the language selector',
+    check('share button sits after the title and before the language selector',
           geo.btn.x >= geo.brand.r - 1 && geo.btn.r <= geo.lang.x + 1,
           `brand.r=${Math.round(geo.brand.r)} btn=${Math.round(geo.btn.x)}..${Math.round(geo.btn.r)} lang.x=${Math.round(geo.lang.x)}`);
-    check('button is centred in that gap',
-          Math.abs((geo.btn.x - geo.brand.r) - (geo.lang.x - geo.btn.r)) <= 24,
-          `left=${Math.round(geo.btn.x - geo.brand.r)} right=${Math.round(geo.lang.x - geo.btn.r)}`);
+    /* The share button and the board button are one pair now, so the centring
+       is asserted on the pair. Asserting it on the share button alone would
+       have demanded that the board hang off its right edge, uncentred. */
+    check('the share/board pair is centred in that gap',
+          Math.abs((geo.acts.x - geo.brand.r) - (geo.lang.x - geo.acts.r)) <= 24,
+          `left=${Math.round(geo.acts.x - geo.brand.r)} right=${Math.round(geo.lang.x - geo.acts.r)}`);
     await page.screenshot({ path: path.join(OUT, '1-landing.png') });
 
     /* tapping it before the game starts should offer to share the game */
@@ -123,9 +129,40 @@ function track(page, errors) {
     await page.waitForTimeout(250);
     check('Escape closes the sheet', await page.locator('.trish').count() === 0);
 
+    console.log('\n── 兵法榜 ──────────────────────────────────────');
+    const lbBtn = page.locator('#lbbtn');
+    check('board button exists', await lbBtn.count() === 1);
+    /* Same lesson as the share button: a feature you cannot see on load is a
+       feature that does not exist. */
+    check('board button visible on load (no state yet)', await lbBtn.isVisible());
+    check('board button says 兵法榜', (await lbBtn.innerText()).trim() === '兵法榜',
+          JSON.stringify((await lbBtn.innerText()).trim()));
+    await lbBtn.click();
+    await page.waitForTimeout(300);
+    check('board panel opened', await page.locator('#lbwrap').count() === 1);
+    /* This run is a file:// open, so there is no server to talk to. The panel
+       has to say so rather than sit there empty and look broken. */
+    check('panel explains itself when opened offline',
+          (await page.locator('#lbwrap').innerText()).indexOf('联网') >= 0,
+          JSON.stringify((await page.locator('#lbwrap').innerText()).slice(0, 60)));
+    await page.screenshot({ path: path.join(OUT, '2b-board-offline.png') });
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(250);
+    check('Escape closes the board', await page.locator('#lbwrap').count() === 0);
+
     console.log('\n── ending ──────────────────────────────────────');
     await page.evaluate(s => window.__setState(s), finalState());
     await page.waitForTimeout(600);
+    /* The score rule is written twice — once here, once in brand/lb/lib.php.
+       This pins the JavaScript half to a literal, so a change to one half that
+       is not made to the other shows up as a failing number rather than as two
+       silently different boards. */
+    const lbInfo = await page.evaluate(() => window.__lb());
+    check('ending screen scores the run (gong 3000 + 280 left + 100 speed)',
+          lbInfo.ending === 'gong' && lbInfo.score === 3380,
+          JSON.stringify(lbInfo));
+    check('a file:// ending offers no dead submit button',
+          await page.locator('#lbsub').count() === 0);
     check('ending meme is rendered', await page.locator('figure.meme img').count() === 1);
     check('meme decoded (naturalWidth > 100)', await page.evaluate(() => {
       const i = document.querySelector('figure.meme img');
@@ -172,9 +209,13 @@ function track(page, errors) {
     check('share button follows the language',
           (await page.locator('#trishbtn').innerText()).trim() === 'Share',
           JSON.stringify((await page.locator('#trishbtn').innerText()).trim()));
+    check('board button follows the language',
+          (await page.locator('#lbbtn').innerText()).trim() === 'Leaderboard',
+          JSON.stringify((await page.locator('#lbbtn').innerText()).trim()));
     await page.locator('#langseg button[data-lang="trad"]').click();
     await page.waitForTimeout(400);
     check('traditional label', (await page.locator('#trishbtn').innerText()).trim() === '分享');
+    check('traditional board label', (await page.locator('#lbbtn').innerText()).trim() === '兵法榜');
     check('still no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
     await page.close();
   }
@@ -193,19 +234,23 @@ function track(page, errors) {
     check('coarse pointer detected (preferNative is on)',
           await page.evaluate(() => window.matchMedia('(pointer: coarse)').matches));
 
-    /* the header stacks on a phone; the button takes its own row in the middle */
+    /* the header stacks on a phone; the pair takes its own row in the middle */
     const mgeo = await page.evaluate(() => {
       const r = s => { const b = document.querySelector(s).getBoundingClientRect();
                        return { x: b.x, r: b.right, y: b.y, b: b.bottom }; };
       const h = document.querySelector('header').getBoundingClientRect();
-      return { hc: h.x + h.width / 2, brand: r('#brand'), btn: r('#trishbtn'), lang: r('.langtone') };
+      return { hc: h.x + h.width / 2, brand: r('#brand'), btn: r('#trishbtn'),
+               acts: r('.headacts'), lang: r('.langtone') };
     });
-    check('phone: button is centred in the header',
-          Math.abs((mgeo.btn.x + mgeo.btn.r) / 2 - mgeo.hc) <= 2,
-          `btn=${Math.round((mgeo.btn.x + mgeo.btn.r) / 2)} header=${Math.round(mgeo.hc)}`);
-    check('phone: button has its own row, between the title and the language',
-          mgeo.btn.y >= mgeo.brand.b - 1 && mgeo.btn.b <= mgeo.lang.y + 1,
-          `brand.b=${Math.round(mgeo.brand.b)} btn=${Math.round(mgeo.btn.y)}..${Math.round(mgeo.btn.b)} lang.y=${Math.round(mgeo.lang.y)}`);
+    check('phone: the share/board pair is centred in the header',
+          Math.abs((mgeo.acts.x + mgeo.acts.r) / 2 - mgeo.hc) <= 2,
+          `pair=${Math.round((mgeo.acts.x + mgeo.acts.r) / 2)} header=${Math.round(mgeo.hc)}`);
+    check('phone: the pair has its own row, between the title and the language',
+          mgeo.acts.y >= mgeo.brand.b - 1 && mgeo.acts.b <= mgeo.lang.y + 1,
+          `brand.b=${Math.round(mgeo.brand.b)} acts=${Math.round(mgeo.acts.y)}..${Math.round(mgeo.acts.b)} lang.y=${Math.round(mgeo.lang.y)}`);
+    check('phone: both buttons still fit on one row',
+          mgeo.btn.x >= mgeo.acts.x - 1 && mgeo.btn.b <= mgeo.acts.b + 1,
+          `acts=${Math.round(mgeo.acts.x)}..${Math.round(mgeo.acts.r)}`);
 
     await page.evaluate(s => window.__setState(s), finalState());
     await page.waitForTimeout(1600);
