@@ -206,6 +206,20 @@ if want hetu; then
   push "hetu-luoshu" "/home/hetu.trilumi.xyz/public_html" _gh/hetu-luoshu index.html
 fi
 
+# 造世 · THE MAKER — the seventh game. It ships its whole shell, not just
+# index.html: the manifest and the icons are only ever pushed once, and a game
+# that is missing them is not installable. The subdomain has to exist first —
+# this writes the files, it does not create the vhost or the DNS record.
+if want createworld; then
+  title "create-world  ·  createworld.trilumi.xyz"
+  push "create-world" "/home/createworld.trilumi.xyz/public_html" _gh/create-world \
+       index.html sw.js manifest.webmanifest
+  push "icons" "/home/createworld.trilumi.xyz/public_html/icons" _gh/create-world/icons \
+       icon-192.png icon-512.png maskable-192.png maskable-512.png \
+       apple-touch-icon.png favicon-32.png
+  push "beacon" "/home/createworld.trilumi.xyz/public_html/_e" brand/beacon p.gif
+fi
+
 # ---------------------------------------------------------------- verify
 
 title "verify"
@@ -245,6 +259,12 @@ fi
 if want rebuild2; then
   verify "rebuild2"           "https://rebuild2.trilumi.xyz/"         || note_fail
   verify "beacon @ rebuild2"  "https://rebuild2.trilumi.xyz/_e/p.gif" || note_fail
+fi
+
+if want createworld; then
+  verify "createworld"          "https://createworld.trilumi.xyz/"          || note_fail
+  verify "beacon @ createworld" "https://createworld.trilumi.xyz/_e/p.gif"  || note_fail
+  verify_sw "createworld" createworld.trilumi.xyz _gh/create-world          || note_fail
 fi
 
 # The retired subpaths, asserted to be gone. A 200 here means something put

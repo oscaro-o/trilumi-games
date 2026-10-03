@@ -248,6 +248,53 @@ WAMI.forEach((s, i) => {
   });
 });
 
+/* --- 造世 / THE MAKER: built by TRICARD too, and the card is the one that
+   carries the player's own law back to them, so the quote is the longest
+   string in the family — exactly the case this harness exists for */
+{
+  const src = read('_gh/create-world/index.html');
+  const keys = ['card_kicker', 's9_big', 's9_mid', 'card_body', 'card_named_as',
+                'card_law', 'st_world', 'st_life', 'st_laws', 'st_time', 'card_footer'];
+  const per = keys.map((k) => {
+    const v = grab(src, k, 3);
+    if (v.length < 3) throw new Error(`create-world: key ${k} found ${v.length} times`);
+    return v;
+  });
+  const ORDER = ['hant', 'hans', 'en'];   /* the order the tables appear in */
+  /* the laws are a nested array, not a flat key:value table, so they get their
+     own pattern. 6 laws x 3 languages, in table order. */
+  const lawRows = [];
+  const lawRe = /\[\s*"([^"]{4,140})"\s*,\s*"[^"]*"\s*\]/g;
+  let lm;
+  while ((lm = lawRe.exec(src)) && lawRows.length < 18) lawRows.push(lm[1]);
+  if (lawRows.length < 18) throw new Error(`create-world: found ${lawRows.length} laws, wanted 18`);
+
+  ORDER.forEach((lg, i) => {
+    const s = {};
+    keys.forEach((k, ki) => { s[k] = per[ki][i]; });
+    const mine = lawRows.slice(i * 6, i * 6 + 6);
+    /* the three the game treats as the load-bearing ones, joined the way the
+       card joins them — this is the longest quote the card can be handed */
+    const quote = s.card_law + '\u300C' + [mine[0], mine[2], mine[5]].join('') + '\u300D';
+    SPECS.push({
+      game: 'create-world', lang: lg, kind: 'tricard',
+      spec: {
+        paper: '#f7f4ef', ink: '#191713', accent: '#a8542a',
+        muted: '#8c8478', line: '#e2dbcf', panel: '#191713', panelInk: '#f2ece2',
+        serif: SERIF, sans: SANS,
+        kicker: s.card_kicker,
+        title: s.s9_big + (lg === 'en' ? ' ' : '') + s.s9_mid,
+        body: s.card_body + s.card_named_as.replace('{n}', 'O'),
+        stats: [{ k: s.st_world, v: '100%' }, { k: s.st_life, v: '26' },
+                { k: s.st_laws, v: '3' }, { k: s.st_time, v: '6:12' }],
+        quote: quote,
+        footer: s.card_footer,
+        mark: (c, x, y, h) => TRILUMI.path(c, x, y, h, '#a8542a'),
+      },
+    });
+  });
+}
+
 /* ----------------------------------------------------------------- checks */
 
 let fails = 0;
